@@ -90,6 +90,47 @@ int main(int argc, char** argv)
 		}
 	}  
 
+	int roi_x1, roi_y1, roi_x2, roi_y2;
+	if (xx<step_x) { roi_x1 = 1; }
+	else { roi_x1 = xx - (step_x / 2) + 1; }
+	if (yy<step_y) { roi_y1 = 1; }
+	else { roi_y1 = yy - (step_y / 2) + 1; }
+	if (xx + step_x > n) { roi_x2 = n; }
+	else { roi_x2 = xx + (step_x / 2) + 1; }
+	if (yy + step_y > m) { roi_y2 = m; }
+	else { roi_y2 = yy + (step_y / 2) + 1; }
+
+	for (int x = roi_x1; x < roi_x2; x++) {
+		for (int y = roi_y1; y < roi_y2; y++)
+		{
+			double numerator = 0;				
+			double second_denominator = 0;		
+
+			for (int i = 1; i < model_matrix.cols; i++) {
+				for (int j = 1; j < model_matrix.rows; j++)
+				{
+					numerator = numerator + ((model_matrix.at<uchar>(j, i))*(current_matrix.at<uchar>(j + y, i + x)));
+				}
+			}
+
+			for (int i = 1; i < model_matrix.cols; i++) {
+				for (int j = 1; j < model_matrix.rows; j++)
+				{
+					second_denominator = second_denominator + ((current_matrix.at<uchar>(j + y, i + x))*(current_matrix.at<uchar>(j + y, i + x)));
+				}
+			}
+
+			result[x, y] = numerator / (sqrt(model_sum * second_denominator));
+
+			if (result[x, y] > max)
+			{
+				max = result[x, y];
+				xx = x;
+				yy = y;
+			}
+		}
+	}
+
 	unsigned int end_time = clock();
 	float run_time = end_time - start_time;	
 
