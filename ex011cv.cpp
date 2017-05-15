@@ -13,6 +13,9 @@ using namespace cv;
 int main(int argc, char** argv)
 {
 	unsigned int start_time = clock();
+	#ifdef _OPENMP 
+		std::cout << "OpenMP supported!" << std::endl;
+	#endif
 	
 	IplImage* model_image = 0;
 	IplImage* current_image = 0;
@@ -48,16 +51,26 @@ int main(int argc, char** argv)
 
 	int step_x = 15;		
 	int step_y = 15;		
+
+#pragma omp parallel 
+{
+#pragma omp for schedule (guided)
 	
 	for (int i = 1; i < model_matrix.cols; i++)
 	{
 		for (int j = 1; j < model_matrix.rows; j++)
 		{
 			int mod_elem_square = (model_matrix.at<uchar>(j, i))*(model_matrix.at<uchar>(j, i));
-
+#pragma omp critical 
+			{
 			model_sum += mod_elem_square;
+			}
 		}
 	}	
+}
+#pragma omp parallel
+{
+#pragma omp for schedule (static)
 
 	for (int x = 1; x <= n; x += step_x) {
 		for (int y = 1; y <= m; y += step_y)
@@ -89,6 +102,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}  
+}
 
 	int roi_x1, roi_y1, roi_x2, roi_y2;
 	if (xx<step_x) { roi_x1 = 1; }
@@ -99,6 +113,10 @@ int main(int argc, char** argv)
 	else { roi_x2 = xx + (step_x / 2) + 1; }
 	if (yy + step_y > m) { roi_y2 = m; }
 	else { roi_y2 = yy + (step_y / 2) + 1; }
+
+#pragma omp parallel 
+{
+#pragma omp for schedule (guided)
 
 	for (int x = roi_x1; x < roi_x2; x++) {
 		for (int y = roi_y1; y < roi_y2; y++)
@@ -130,7 +148,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-
+}
 	unsigned int end_time = clock();
 	float run_time = end_time - start_time;	
 
